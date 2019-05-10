@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+set -eo pipefail
+shopt -s lastpipe
+
+export getSpec='rev=$(git rev-parse HEAD); ref=$(git show-ref | sed -n "s/^$rev //p" | head -n1); url=$(git remote get-url origin | sed "s/\(\.git\|\/\)$//"); alias=${url##*/}; con=${alias}_${rev::7}; '
+
+submods() {
+  git submodule --quiet foreach --recursive \
+    "$getSpec"'printf %s\\n "$PWD $con"' \
+    | sort -k2 -u
+}
+export -f submods
+
+subdeps() {
+  git submodule --quiet foreach "$getSpec"'printf %s "
+        $alias = $con;"'
+}
+export -f subdeps
+
+spec() {
+  (cd $1
+    eval "$getSpec"
+    deps=$(subdeps)
+    name=$alias-${rev::7}
+    printf %s "
+    $con = {
+      name = \"$alias\";
+      deps = {$deps
+      };
+      src = \"\${fetchGit {
+        name = \"$name-source\";
+        url = \"$url\";
+        rev = \"$rev\";
+        ref = \"${ref#refs/remotes/*/}\";
+      }}/src\";
+    };"
+  )
+}
+export -f spec
+
+specs() {
+  eval "$getSpec"
+  local repos="$1
+$PWD $con"
+
+  printf %s "
+  specs = rec {"
+
+  cut -d " " -f1 <<<"$repos" | while read -r path; do
+    spec $path
+  done
+
+  printf %s "
+    this = $con // { src = ./src; };
+  };"
+}
+export -f specs
+
+
+repos=$(submods)
+
+[ -n "$repos" ] || { echo >&2 'Submodules not initiated? Run: `git submodule update --init --recursive`'; exit 1; }
+
+[ -z "$TEMPLATE_HEADER" ] || printf %s\\n "$TEMPLATE_HEADER"
+
+printf %s "{ solidityPackage, solc }:
+
+let
+  solc' = solc;
+  inherit (builtins) mapAttrs attrValues;
+
+  package = spec: let
+    inherit ({ solc = solc'; } // spec) name src deps solc;
+  in solidityPackage {
+    inherit name src solc;
+    deps = map (spec: package (spec // { inherit solc; })) (attrValues deps);
+  };
+
+  packageSpecs = specs:
+    mapAttrs (_: spec: package spec) specs;
+"
+
+specs "$repos"
+
+printf %s "
+in {
+  inherit package packageSpecs specs;
+  this = package specs.this;
+  deps = packageSpecs specs.this.deps;
+}
+"
