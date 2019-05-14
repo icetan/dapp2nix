@@ -22,10 +22,9 @@ You can now import this file into your derivation:
 
 ```nix
 let
-  dapp-version = "dapp/0.16.0";
-  dapp-pkgs = import (fetchTarball {
-    url = "https://github.com/dapphub/dapptools/tarball/${dapp-version}";
-    sha256 = "06k4grj8spdxg5758sqz908f92hp707khsnb2dygsl0229z4rhxl";
+  dapp-pkgs = import (fetchGit {
+    url = https://github.com/dapphub/dapptools;
+    rev = "a32228048a23ea8f81fdb0e8acb98b914c30144d";
   }) {};
 
   inherit (dapp-pkgs.callPackage ./dapp.nix {}) this;

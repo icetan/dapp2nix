@@ -63,18 +63,24 @@ repos=$(submods)
 
 [ -z "$TEMPLATE_HEADER" ] || printf %s\\n "$TEMPLATE_HEADER"
 
-printf %s "{ solidityPackage, solc }:
+printf %s "{ solidityPackage, solc, dapp2 }:
 
 let
-  solc' = solc;
   inherit (builtins) mapAttrs attrValues;
 
-  package = spec: let
-    inherit ({ solc = solc'; } // spec) name src deps solc;
-  in solidityPackage {
-    inherit name src solc;
-    deps = map (spec: package (spec // { inherit solc; })) (attrValues deps);
+  defaults = {
+    inherit solc;
+    test-hevm = dapp2.test-hevm;
+    doCheck = true;
   };
+
+  package = spec: let
+    spec' = defaults // spec;
+  in solidityPackage (spec' // {
+    deps = map (spec:
+      package (spec // { inherit (spec') solc test-hevm doCheck; })
+    ) (attrValues spec'.deps);
+  });
 
   packageSpecs = specs:
     mapAttrs (_: spec: package spec) specs;
