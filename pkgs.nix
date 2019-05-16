@@ -1,7 +1,6 @@
 let
-  pkgs-version = "19.03";
   pkgs = import (fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/tarball/${pkgs-version}";
-    sha256 = "06k4grj8spdxg5758sqz908f92hp707khsnb2dygsl0229z4rhxl";
+    url = https://releases.nixos.org/nixos/19.03/nixos-19.03.172627.c21f08bfedd/nixexprs.tar.xz;
+    sha256 = "1bs16f4zaq6j5wk7zp0jdcsb144sqycv3bk3jiq2sracc5wswgqh";
   }) {};
 in pkgs
