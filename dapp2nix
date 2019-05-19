@@ -23,16 +23,18 @@ spec() {
     deps=$(subdeps)
     name=$alias-${rev::7}
     printf %s "
-    $con = {
+    $con = rec {
       name = \"$alias\";
       deps = {$deps
       };
-      src = \"\${fetchGit {
+      repo' = {
         name = \"$name-source\";
         url = \"$url\";
         rev = \"$rev\";
         ref = \"${ref#refs/remotes/*/}\";
-      }}/src\";
+      };
+      src' = fetchGit repo';
+      src = \"\${src'}/src\";
     };"
   )
 }
@@ -51,7 +53,7 @@ $PWD $con"
   done
 
   printf %s "
-    this = $con // { src = ./src; };
+    this = $con // { src' = ./.; src = ./src; };
   };"
 }
 export -f specs
@@ -81,7 +83,7 @@ let
   };
 
   package = spec: let
-    spec' = defaults // spec;
+    spec' = defaults // (removeAttrs spec [ \"repo'\" ]);
   in solidityPackage (spec' // {
     deps = map (spec:
       package (spec // { inherit (spec') solc test-hevm doCheck; })
