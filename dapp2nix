@@ -95,8 +95,7 @@ let
     ) (attrValues spec'.deps);
   });
 
-  packageSpecs = specs:
-    mapAttrs (_: package) specs;
+  packageSpecs = mapAttrs (_: package);
 "
 
 specs "$repos"
