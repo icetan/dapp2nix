@@ -88,7 +88,7 @@ let
   };
 
   package = spec: let
-    spec' = defaults // (removeAttrs spec [ \"repo'\" ]);
+    spec' = defaults // (removeAttrs spec [ \"repo'\" \"src'\" ]);
   in solidityPackage (spec' // {
     deps = map (spec:
       package (spec // { inherit (spec') solc test-hevm doCheck; })
