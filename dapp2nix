@@ -2,7 +2,12 @@
 set -eo pipefail
 shopt -s lastpipe
 
-export getSpec='rev=$(git rev-parse HEAD); ref=$(git show-ref | sed -n "s/^$rev //p" | head -n1); url=$(git remote get-url origin | sed "s/\(\.git\|\/\)$//"); alias=${url##*/}; con=${alias}_${rev::7}; '
+export getSpec='rev=$(git rev-parse HEAD); \
+fullref=$(git for-each-ref --contains $rev | sed -n "s/^.*refs\/\(heads\|remotes\/\)//p" | sort -k1.1,1.1 -rs | head -n1); \
+remote=${fullref%/*}; remote=${remote:-origin};
+ref=${fullref#*/}; \
+url=$(git remote get-url $remote | sed "s/\(\.git\|\/\)$//"); \
+alias=${url##*/}; con=${alias}_${rev::7}; '
 
 submods() {
   git submodule --quiet foreach --recursive \
