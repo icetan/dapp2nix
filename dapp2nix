@@ -89,11 +89,10 @@ let
 
   package = spec: let
     spec' = defaults // (removeAttrs spec [ \"repo'\" \"src'\" ]);
-  in solidityPackage (spec' // {
     deps = map (spec:
       package (spec // { inherit (spec') solc test-hevm doCheck; })
     ) (attrValues spec'.deps);
-  });
+  in solidityPackage (spec' // { inherit deps; });
 
   packageSpecs = mapAttrs (_: package);
 "
