@@ -47,8 +47,12 @@ export -f spec
 
 specs() {
   eval "$getSpec"
-  local repos="$1
+
+  local repos
+  repos="$1
 $PWD $con"
+  local dest
+  dest=$(realpath --relative-to="$2" .)
 
   printf %s "
   specs = rec {"
@@ -58,19 +62,22 @@ $PWD $con"
   done
 
   printf %s "
-    this = $con // { src' = ./.; src = ./src; };
+    this = $con // { src' = ${dest}/.; src = ${dest}/src; };
   };"
 }
 export -f specs
 
+main() {
+  local repos
+  repos=$(submods)
+  local dest
+  dest="$1"
 
-repos=$(submods)
+  [ -n "$repos" ] || { echo >&2 'Submodules not initiated? Run: `git submodule update --init --recursive`'; exit 1; }
 
-[ -n "$repos" ] || { echo >&2 'Submodules not initiated? Run: `git submodule update --init --recursive`'; exit 1; }
+  [ -z "$TEMPLATE_HEADER" ] || printf %s\\n "$TEMPLATE_HEADER"
 
-[ -z "$TEMPLATE_HEADER" ] || printf %s\\n "$TEMPLATE_HEADER"
-
-printf %s "{ solidityPackage, solc, dapp2 }:
+  printf %s "{ solidityPackage, solc, dapp2 }:
 
 let
   inherit (builtins) map listToAttrs attrNames attrValues;
@@ -97,12 +104,19 @@ let
   packageSpecs = mapAttrs (_: package);
 "
 
-specs "$repos"
+  specs "$repos" "$dest"
 
-printf %s "
+  printf %s "
 in {
   inherit package packageSpecs specs;
   this = package specs.this;
   deps = packageSpecs specs.this.deps;
 }
 "
+}
+
+if [ -n "$1" ]; then
+  main "$(dirname "$(realpath "$1")")" > "$1"
+else
+  main .
+fi
