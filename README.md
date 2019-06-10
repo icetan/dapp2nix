@@ -1,6 +1,6 @@
 # dapp2nix
 
-Generate nix expressions for dapptool repos.
+Generate nix expressions for [dapp.tools](https://dapp.tools/) repos, based on their installed submodules
 
 ## Install
 
