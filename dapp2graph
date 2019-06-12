@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -eo pipefail
+shopt -s lastpipe
+
+lockFile=$(realpath ${1:-./dapp.nix})
+expr="
+  with import (fetchTarball https://github.com/dapphub/dapptools/tarball/master) {};
+    (callPackage $lockFile {}).specs
+"
+jqSub='.["repo'"'"'"].name | sub("-(?<h>[0-9a-f]*)-source$"; "\\n" + (.h))'
+jqExpr='.[] | "\"" + (.deps[] | '"$jqSub"') + "\" -> \"" + (. | '"$jqSub"') + "\""'
+graph=$(
+  nix-instantiate --strict --json --eval -E "$expr" \
+    | jq -r "$jqExpr" \
+    | grep -v '^"this" ->' \
+    | sort -u
+)
+
+if [[ $GRAPH_ONLY ]]; then
+  echo "$graph"
+else
+  echo "digraph G {
+  splines=ortho
+$graph
+  }" | dot -Tsvg
+fi

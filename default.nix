@@ -16,10 +16,15 @@ in stdenv.mkDerivation {
 
   installPhase = ''
     mkdir -p $out/bin
+
     cp dapp2nix $out/bin
     wrapProgram $out/bin/dapp2nix \
       --set TEMPLATE_HEADER "${gen-header}" \
       --set PATH ${lib.makeBinPath [ coreutils gnused git ]}
+
+    cp dapp2graph $out/bin
+    wrapProgram $out/bin/dapp2graph \
+      --set PATH ${lib.makeBinPath [ coreutils nix gnutar gnugrep git jq graphviz ]}
   '';
 
   meta = with stdenv.lib; {
