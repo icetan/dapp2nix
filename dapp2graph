@@ -5,13 +5,15 @@ shopt -s lastpipe
 lockFile=$(realpath "${1:-./dapp.nix}")
 expr="
   with import (fetchTarball https://github.com/dapphub/dapptools/tarball/master) {};
+  lib.filterAttrsRecursive
+    (name: _: ! (builtins.elem name [ \"src'\" \"src\" \"repo'\" ]))
     (callPackage $lockFile {}).specs
 "
 jqSub='.name'
 jqExpr='.[] | "\"" + (.deps[] | '"$jqSub"') + "\" -> \"" + (. | '"$jqSub"') + "\""'
+json=$(nix-instantiate --strict --json --eval -E "$expr")
 graph=$(
-  nix-instantiate --strict --json --eval -E "$expr" \
-    | jq -r "$jqExpr" \
+  jq -r "$jqExpr" <<<"$json" \
     | grep -v '^"this" ->' \
     | sort -u
 )
