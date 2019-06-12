@@ -12,13 +12,8 @@ nix-env -i -f https://github.com/icetan/dapp2nix/tarball/master
 
 ### Generate lock file
 
-The `dapp2nix` generates a nix expression:
-
-```sh
-dapp2nix > dapp.nix
-```
-
-You can now import this file into your derivation:
+`dapp2nix` will create the file `dapp.nix` which you can import into your
+derivation:
 
 ```nix
 let

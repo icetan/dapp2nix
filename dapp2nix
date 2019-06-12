@@ -115,8 +115,5 @@ in {
 "
 }
 
-if [ -n "$1" ]; then
-  main "$(dirname "$(realpath "$1")")" > "$1"
-else
-  main .
-fi
+outPath=${1:-./dapp.nix}
+main "$(dirname "$(realpath "$outPath")")" > "$outPath"
