@@ -2,7 +2,7 @@
 set -eo pipefail
 shopt -s lastpipe
 
-lockFile=$(realpath ${1:-./dapp.nix})
+lockFile=$(realpath "${1:-./dapp.nix}")
 expr="
   with import (fetchTarball https://github.com/dapphub/dapptools/tarball/master) {};
     (callPackage $lockFile {}).specs

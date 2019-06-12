@@ -23,7 +23,7 @@ subdeps() {
 export -f subdeps
 
 spec() {
-  (cd $1
+  (cd "$1"
     eval "$getSpec"
     deps=$(subdeps)
     name=$alias-${rev::7}
@@ -48,19 +48,16 @@ export -f spec
 specs() {
   eval "$getSpec"
 
-  local repos
-  repos="$1
+  local repos; repos="$1
 $PWD $con"
-  local root
-  root=$(realpath .)
-  local dest
-  dest=$(realpath --relative-to="$2" "$root")
+  local root; root=$(realpath .)
+  local dest; dest=$(realpath --relative-to="$2" "$root")
 
   printf %s "
   specs = rec {"
 
   cut -d " " -f1 <<<"$repos" | while read -r path; do
-    if [[ $path == $root ]]; then
+    if [[ $path == "$root" ]]; then
       printf %s "
     $alias = rec {
       name = \"$alias\";
@@ -71,7 +68,7 @@ $PWD $con"
     };
     this = $alias;"
     else
-      spec $path
+      spec "$path"
     fi
   done
 
@@ -81,10 +78,8 @@ $PWD $con"
 export -f specs
 
 main() {
-  local repos
-  repos=$(submods)
-  local dest
-  dest="$1"
+  local repos; repos=$(submods)
+  local dest; dest="$1"
 
   [ -n "$repos" ] || { echo >&2 'Submodules not initiated? Run: `git submodule update --init --recursive`'; exit 1; }
 
