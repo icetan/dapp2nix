@@ -51,18 +51,31 @@ specs() {
   local repos
   repos="$1
 $PWD $con"
+  local root
+  root=$(realpath .)
   local dest
-  dest=$(realpath --relative-to="$2" .)
+  dest=$(realpath --relative-to="$2" "$root")
 
   printf %s "
   specs = rec {"
 
   cut -d " " -f1 <<<"$repos" | while read -r path; do
-    spec $path
+    if [[ $path == $root ]]; then
+      printf %s "
+    $alias = rec {
+      name = \"$alias\";
+      deps = {$(subdeps)
+      };
+      src' = ${dest}/.;
+      src = ${dest}/src;
+    };
+    this = $alias;"
+    else
+      spec $path
+    fi
   done
 
   printf %s "
-    this = $con // { src' = ${dest}/.; src = ${dest}/src; };
   };"
 }
 export -f specs
