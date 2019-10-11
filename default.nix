@@ -14,16 +14,20 @@ in stdenv.mkDerivation {
   phases = [ "unpackPhase" "installPhase" "fixupPhase" ];
 
   installPhase = ''
-    mkdir -p $out/bin
+    mkdir -p $out/{bin,lib}
+
+    cp dapp2.nix $out/lib/dapp2.nix
 
     cp dapp2nix $out/bin
     wrapProgram $out/bin/dapp2nix \
       --set DAPP2NIX_VERSION "${version}" \
-      --set PATH ${lib.makeBinPath [ coreutils gnused git ]}
+      --set DAPP2NIX_FORMAT_VERSION 1 \
+      --set DAPP2NIX_EXPR "$out/lib/dapp2.nix" \
+      --set PATH ${lib.makeBinPath [ coreutils gnused git jq mktemp ]}
 
     cp dapp2graph $out/bin
     wrapProgram $out/bin/dapp2graph \
-      --set PATH ${lib.makeBinPath [ coreutils nix gnutar gnugrep git jq graphviz ]}
+      --set PATH ${lib.makeBinPath [ coreutils gnugrep jq graphviz ]}
   '';
 
   meta = with stdenv.lib; {
