@@ -18,9 +18,12 @@ Commands
   remove | rm <NAME>        Remove a dependency
   update | up [NAME [REF]]  Update a dependency to REF
   list | ls                 List dependencies
+  duplicates | dup          List duplicate dependencies
   clone [PATH]              Clone dependencies into a directory
   clone-recursive [PATH]    Clone dependencies into a directory and fetch their submodules
   help                      Print this message
+
+Version $DAPP2NIX_VERSION
 "
 }
 
@@ -131,8 +134,35 @@ tmpclone() {
 }
 
 clean_deps() {
-  echo "Not implemented" >&2
-  echo "$1"
+  jq '
+      .contracts as $cs
+    | def fu:
+        flatten | unique
+      ;
+      def w($dep):
+        [$dep] + [
+          $cs[$dep].deps[]
+        | values
+        | reduce . as $x ([]; . + w($x))
+        ] | fu
+      ;
+
+    .contracts = (
+        [ .this.deps[] | values | w(.) ]
+      | fu as $deps
+      | $cs
+      | to_entries
+      | [
+          .[]
+        | select(
+            .key as $key
+          | $deps
+          | contains([$key])
+        )
+      ]
+      | from_entries
+    )
+  ' <<<"$1"
 }
 
 add_dep() {
@@ -150,22 +180,27 @@ add_dep() {
     exit 1
   }
 
-  jq "{contracts:([.contracts, $contracts, {\"$addcon\":$this}] | add), this:([.this, {deps:([.this.deps, {\"$addname\":\"$addcon\"}] | add)}] | add)}" <<<"$jsonIn"
+  merge_json <<<"
+    $jsonIn
+    {\"contracts\": $contracts}
+    {\"contracts\": {\"$addcon\":$this}, \"this\": {\"deps\": {\"$addname\":\"$addcon\"}}}
+  "
 }
 
 init() {
+    cp "${DAPP2NIX_EXPR:-dapp2.nix}" "$1/dapp2.nix"
+    chmod +w "$1/dapp2.nix"
     printf %s "
 {
   \"contracts\": {},
   \"this\": {
-$(spec "$path" | sed '1,2d;$d')
+$(spec "$1" | sed '1,2d;$d')
   }
 }"
 }
 
 remove_dep() {
-  local jsonOut=$(jq "del(.this.deps.\"$2\")" <<<"$1")
-  clean_deps "$jsonOut"
+  clean_deps "$(jq "del(.this.deps.\"$2\")" <<<"$1")"
 }
 
 update_dep() {
@@ -181,7 +216,6 @@ update_dep() {
   local url=$(jq -r ".repo.url" <<<"$dep")
   local jsonOut
   jsonOut=$(remove_dep "$1" "$2")
-  jsonOut=$(clean_deps "$jsonOut")
   add_dep "$jsonOut" "$url" "$ref"
 }
 
@@ -198,7 +232,7 @@ list_deps() {
     .contracts as $cs
     | .this.deps | to_entries | .[]
     | ($cs[.value] as $c
-      | $c.name + " " + $c.repo.url + " " + $c.repo.ref + " " + $c.repo.rev
+      | "\($c.name) \($c.repo.url) \($c.repo.ref) \($c.repo.rev)"
       )
   ' <<<"$1"
 }
@@ -226,22 +260,40 @@ merge_json() {
 }
 
 save() {
-  jq -S '.version = ($ENV.DAPP2NIX_FORMAT_VERSION | tonumber)' <<<"$1" > "$2"
+  local jsonOut
+  jsonOut=$(clean_deps "$1")
+  jsonOut=$(jq -S '.version = ($ENV.DAPP2NIX_FORMAT_VERSION | tonumber)' <<<"$jsonOut")
+  if [[ -n "$jsonOut" ]]; then
+    echo "$jsonOut" > "$2"
+  else
+    exit 5
+  fi
 }
 
 outPath="$PWD/.dapp.json"
 outDir="$PWD"
 
-[[ -f "$outPath" || $1 == init ]] || {
-  echo >&2 "Couldn't read .dapp.json, please run: \`dapp2nix init\` first"
+[[ -f "$outPath" || $1 == init || $1 == migrate ]] || {
+  echo >&2 "Couldn't read .dapp.json, please run: \`dapp2nix init\` or \`dapp2nix migrate\` first"
+  usage
   exit 1
 }
 
 case "${1:-help}" in
   init)
-    save "$(init)" "$outPath"
-    cp "${DAPP2NIX_EXPR-dapp2.nix}" "$outDir/dapp2.nix"
-    chmod +w "$outDir/dapp2.nix"
+    [[ ! -e "$outPath" ]] || {
+      echo >&2 ".dapp.json already exists, will not init"
+      exit 1
+    }
+    save "$(init "$outDir")" "$outPath"
+    ;;
+  migrate)
+    [[ ! -e "$outPath" ]] || {
+      echo >&2 ".dapp.json already exists, will not migrate"
+      exit 1
+    }
+    init "$outDir" >/dev/null
+    save "$(main)" "$outPath"
     ;;
   add)
     jsonOut=$(add_dep "$(cat "$outPath")" "$2" "$3") || exit $?
@@ -252,7 +304,11 @@ case "${1:-help}" in
     save "$jsonOut" "$outPath"
     ;;
   list|ls)
-    list_deps "$(cat "$outPath")"
+    list_deps "$(cat "$outPath")" | column -t -s" "
+    ;;
+  duplicates|dup)
+    jq -r '.contracts[] | values | "\(.repo.rev) \(.name)"' "$outPath" \
+      | sort -k2 | uniq -f1 -D | column -t -s" "
     ;;
   update|up)
     if [[ -n $2 ]]; then
@@ -261,9 +317,6 @@ case "${1:-help}" in
       jsonOut=$(update_deps "$(cat "$outPath")") || exit $?
     fi
     save "$jsonOut" "$outPath"
-    ;;
-  migrate)
-    save "$(main)" "$outPath"
     ;;
   clone)
     clone_deps "$(cat "$outPath")" "$2"
