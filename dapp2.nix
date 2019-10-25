@@ -47,5 +47,4 @@ in {
   inherit package packageSpecs specs;
   this = package specs.this;
   deps = packageSpecs specs.this.deps;
-  #version = \"${DAPP2NIX_VERSION:-unknown}\";
 }
