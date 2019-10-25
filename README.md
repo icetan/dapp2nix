@@ -1,9 +1,10 @@
 # dapp2nix
 
-Generate nix expressions for [dapp.tools](https://dapp.tools/) repos, based on
-their installed submodules.
+Manage [Dappsys](http://dapp.tools/dappsys/) dependencies with Nix.
 
 ## Install
+
+To make the `dapp2nix` CLI available in your user environment run:
 
 ```sh
 nix-env -i -f https://github.com/icetan/dapp2nix/tarball/master
@@ -11,10 +12,12 @@ nix-env -i -f https://github.com/icetan/dapp2nix/tarball/master
 
 ## Usage
 
-### Generate lock file
+To print the CLI usage message run `dapp2nix help`.
 
-`dapp2nix init` will create a lock file (`.dapp.json`) and a nix expression
-(`dapp2.nix`) which you can import into your derivation:
+### Getting started
+
+`dapp2nix init` will create an empty lock file (`.dapp.json`) and a nix
+expression (`dapp2.nix`) which you can import into your derivation:
 
 ```nix
 let
@@ -27,8 +30,15 @@ let
 in this
 ```
 
+Now start adding dependencies with `dapp2nix add <git repo url>`.
+
+List your installed dependencies with `dapp2nix list`.
+
 ### Migrate from dapp submodules
 
-To remove the need to add dappsys dependencies as submodules you can run
-`dapp2nix migrate`. This will look att the currently fetched submodules and
-generate the `.dapp.json` lock file.
+To remove the need for dappsys submodules completely you can run `dapp2nix
+migrate` in one of your existing dappsys repos. This will look att the
+currently fetched submodules and generate a `.dapp.json` lock file from that.
+
+After this you can `git submodules deinit --all -f` and then `git rm -r <empty submodule
+dirs>` to remove the old submodules from your git repo.
