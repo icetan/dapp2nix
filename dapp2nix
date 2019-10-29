@@ -130,7 +130,6 @@ tmpclone() {
       main "$target"
     fi
   ) || exit $?
-  rm -rf "$target"
 }
 
 clean_deps() {
@@ -212,6 +211,13 @@ update_dep() {
   }
 
   local dep=$(jq ".contracts.$con" <<<"$1")
+  local rev=$(jq -r ".repo.rev" <<<"$dep")
+
+  [[ "$rev" != "$3" ]] || {
+    echo >&2 "Dependency $2 already at revision $rev"
+    return
+  }
+
   local ref=${3:-$(jq -r ".repo.ref" <<<"$dep")}
   local url=$(jq -r ".repo.url" <<<"$dep")
   local jsonOut
@@ -269,6 +275,12 @@ save() {
     exit 5
   fi
 }
+
+cleanup() {
+  rm -rf dapp2nix_git_??????
+}
+
+trap 'trap - EXIT; cleanup' EXIT
 
 outPath="$PWD/.dapp.json"
 outDir="$PWD"

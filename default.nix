@@ -4,7 +4,7 @@
 
 let
   name = "dapp2nix";
-  version = "2.0.0";
+  version = "2.0.1";
 in stdenv.mkDerivation {
   name = "${name}-${version}";
   src = lib.cleanSource ./.;
