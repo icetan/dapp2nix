@@ -1,6 +1,8 @@
-let
-  pkgs = import (fetchTarball {
-    url = https://releases.nixos.org/nixos/19.03/nixos-19.03.172627.c21f08bfedd/nixexprs.tar.xz;
-    sha256 = "1bs16f4zaq6j5wk7zp0jdcsb144sqycv3bk3jiq2sracc5wswgqh";
-  }) {};
-in pkgs
+rec {
+  nixpkgs = fetchGit {
+    url = "https://github.com/NixOS/nixpkgs-channels";
+    ref = "nixos-19.09";
+    rev = "c75de8bc12cc7e713206199e5ca30b224e295041";
+  };
+  pkgs = import nixpkgs {};
+}

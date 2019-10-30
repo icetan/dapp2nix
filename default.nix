@@ -1,39 +1,9 @@
 {
-  pkgs ? import ./pkgs.nix,
+  pkgs ? (import ./pkgs.nix).pkgs,
 }: with pkgs;
 
 let
-  name = "dapp2nix";
-  version = "2.0.1";
-in stdenv.mkDerivation {
-  name = "${name}-${version}";
-  src = lib.cleanSource ./.;
-
-  nativeBuildInputs = [ makeWrapper shellcheck ];
-
-  phases = [ "unpackPhase" "installPhase" "fixupPhase" "checkPhase" ];
-
-  installPhase = ''
-    mkdir -p $out/{bin,lib}
-
-    cp dapp2.nix $out/lib/dapp2.nix
-
-    cp dapp2nix $out/bin
-    wrapProgram $out/bin/dapp2nix \
-      --set DAPP2NIX_VERSION "${version}" \
-      --set DAPP2NIX_FORMAT_VERSION 1 \
-      --set DAPP2NIX_EXPR "$out/lib/dapp2.nix" \
-      --set PATH ${lib.makeBinPath [ coreutils utillinux gnused git jq mktemp ]}
-
-    cp dapp2graph $out/bin
-    wrapProgram $out/bin/dapp2graph \
-      --set PATH ${lib.makeBinPath [ coreutils gnugrep jq graphviz ]}
-  '';
-
-  doCheck = false;
-  checkPhase = ''
-    shellcheck -x dapp2nix dapp2graph
-  '';
+  version = "2.0.2";
 
   meta = with stdenv.lib; {
     description = "Generate a nix expressions for dapptool repos";
@@ -41,4 +11,56 @@ in stdenv.mkDerivation {
     license = licenses.unlicense;
     maintainers = [ { email = "me@icetan.org"; github = "icetan"; name = "Christopher Fredén"; } ];
   };
+
+  dapp2nix = stdenv.mkDerivation {
+    name = "dapp2nix-${version}";
+    src = ./src;
+
+    nativeBuildInputs = [ makeWrapper shellcheck ];
+
+    phases = [ "unpackPhase" "installPhase" "fixupPhase" "checkPhase" ];
+
+    installPhase = ''
+      mkdir -p $out/{bin,lib}
+
+      cp dapp2.nix $out/lib/dapp2.nix
+
+      cp dapp2nix $out/bin
+      wrapProgram $out/bin/dapp2nix \
+        --set DAPP2NIX_VERSION "${version}" \
+        --set DAPP2NIX_FORMAT_VERSION 1 \
+        --set DAPP2NIX_EXPR "$out/lib/dapp2.nix" \
+        --set PATH ${lib.makeBinPath [ coreutils utillinux gnused git jq mktemp ]}
+    '';
+
+    doCheck = false;
+    checkPhase = ''
+      shellcheck -x dapp2nix
+    '';
+    inherit meta;
+  };
+
+  dapp2graph = stdenv.mkDerivation {
+    name = "dapp2graph-${version}";
+    src = ./src;
+
+    nativeBuildInputs = [ makeWrapper shellcheck ];
+
+    phases = [ "unpackPhase" "installPhase" "fixupPhase" "checkPhase" ];
+
+    installPhase = ''
+      mkdir -p $out/bin
+      cp dapp2graph $out/bin
+      wrapProgram $out/bin/dapp2graph \
+        --set PATH ${lib.makeBinPath [ coreutils gnugrep jq graphviz ]}
+    '';
+
+    doCheck = false;
+    checkPhase = ''
+      shellcheck -x dapp2graph
+    '';
+    inherit meta;
+  };
+in {
+  inherit dapp2nix dapp2graph;
 }
