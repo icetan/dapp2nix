@@ -37,6 +37,9 @@ let
     checkPhase = ''
       shellcheck -x dapp2nix
     '';
+
+    passthru = { inherit dapp2graph dapp2nix; };
+
     inherit meta;
   };
 
@@ -61,6 +64,4 @@ let
     '';
     inherit meta;
   };
-in {
-  inherit dapp2nix dapp2graph;
-}
+in dapp2nix
