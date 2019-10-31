@@ -3,7 +3,7 @@
 }: with pkgs;
 
 let
-  version = "2.1.2";
+  version = "2.1.3";
 
   meta = with stdenv.lib; {
     description = "Generate a nix expressions for dapptool repos";
