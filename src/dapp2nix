@@ -93,7 +93,6 @@ $PWD $con"
     fi
   done
 
-  #deps=$(subdeps)
   printf %s "
   },
   \"this\": {
@@ -124,7 +123,8 @@ tmpclone() {
   clone "$1" "${2:-HEAD}" "$target" >&2
   (cd "$target" || exit 3
     if [[ -f "./dapp.json" ]]; then
-      cat ./dapp.json
+      local repo; repo=$(jq -c .repo <<<"$(spec "$target" | sed '1s/^.*://')")
+      jq ".this.repo = $repo" ./dapp.json
     else
       git submodule update --init --recursive >&2 || exit 3
       main "$target"
@@ -193,7 +193,8 @@ init() {
 {
   \"contracts\": {},
   \"this\": {
-$(spec "$1" | sed '1,2d;$d')
+    \"name\": \"${1##*/}\",
+    \"deps\": {}
   }
 }"
 }
@@ -268,7 +269,10 @@ merge_json() {
 save() {
   local jsonOut
   jsonOut=$(clean_deps "$1")
-  jsonOut=$(jq -S '.version = ($ENV.DAPP2NIX_FORMAT_VERSION | tonumber)' <<<"$jsonOut")
+  jsonOut=$(jq -S '
+      .version = ($ENV.DAPP2NIX_FORMAT_VERSION | tonumber)
+    | del(.this.repo)
+  ' <<<"$jsonOut")
   if [[ -n "$jsonOut" ]]; then
     echo "$jsonOut" > "$2"
   else
