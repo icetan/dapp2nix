@@ -335,10 +335,10 @@ case "${1:-help}" in
     save "$jsonOut" "$outPath"
     ;;
   clone)
-    clone_deps "$(cat "$outPath")" "$2"
+    clone_deps "$(cat "$outPath")" "${2:-lib}"
     ;;
   clone-recursive)
-    clone_deps "$(cat "$outPath")" "$2" --recursive
+    clone_deps "$(cat "$outPath")" "${2:-lib}" --recursive
     ;;
   help)
     usage
