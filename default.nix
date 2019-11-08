@@ -3,7 +3,7 @@
 }: with pkgs;
 
 let
-  version = "2.1.3";
+  version = "2.1.4";
 
   meta = with stdenv.lib; {
     description = "Generate a nix expressions for dapptool repos";
@@ -30,7 +30,7 @@ let
         --set DAPP2NIX_VERSION "${version}" \
         --set DAPP2NIX_FORMAT_VERSION 1 \
         --set DAPP2NIX_EXPR "$out/lib/dapp2.nix" \
-        --set PATH ${lib.makeBinPath [ coreutils utillinux gnused git jq mktemp ]}
+        --set PATH ${lib.makeBinPath [ coreutils utillinux gnused git jq ]}
     '';
 
     doCheck = false;
