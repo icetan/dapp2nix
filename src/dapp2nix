@@ -119,6 +119,7 @@ clone() {
   (cd "$3" || exit 3
     git fetch >&2 || exit 3
     git checkout "${2:-HEAD}" >&2 || exit 3
+    git pull >&2 || true
   ) || exit $?
 }
 
