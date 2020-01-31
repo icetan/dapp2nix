@@ -27,6 +27,7 @@ let
 
       cp dapp2nix $out/bin
       wrapProgram $out/bin/dapp2nix \
+        --set-default NIX_SSL_CERT_FILE "${cacert}/etc/ssl/certs/ca-bundle.crt" \
         --set DAPP2NIX_VERSION "${version}" \
         --set DAPP2NIX_FORMAT_VERSION 1 \
         --set DAPP2NIX_EXPR "$out/lib/dapp2.nix" \
